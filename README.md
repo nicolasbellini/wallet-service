@@ -60,6 +60,8 @@ Errors are returned as RFC 7807 `application/problem+json` bodies.
 
 Wallets are always created in BRL (single-currency assumption — see TRADEOFFS.md), so `POST /wallet` only needs a `userId`.
 
+All four mutating endpoints (`POST /wallet`, `/deposit`, `/withdrawal`, `/transfer`) accept an optional `Idempotency-Key` header. Send the same key on a retry (e.g. after a timeout) and you'll get back the original response instead of the operation being applied twice — see DESIGN.md for how this is guaranteed atomically. Omit the header and nothing changes: every request is applied independently, as before.
+
 ## Curl walkthrough
 
 ```bash
@@ -86,6 +88,12 @@ curl -s -X POST localhost:8080/api/v1/transfer -H 'Content-Type: application/jso
 # balances
 curl -s localhost:8080/api/v1/wallet/$WALLET1/balance
 curl -s "localhost:8080/api/v1/wallet/$WALLET1/balance/history?asOf=2026-07-09T10:00:00Z"
+
+# idempotent retry: same key twice only deposits once
+curl -s -X POST localhost:8080/api/v1/wallet/$WALLET1/deposit -H 'Content-Type: application/json' \
+  -H 'Idempotency-Key: retry-demo-1' -d '{"amount":"50.00"}'
+curl -s -X POST localhost:8080/api/v1/wallet/$WALLET1/deposit -H 'Content-Type: application/json' \
+  -H 'Idempotency-Key: retry-demo-1' -d '{"amount":"50.00"}'  # returns the same response, balance unchanged
 
 # health
 curl -s localhost:8080/actuator/health

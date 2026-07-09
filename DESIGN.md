@@ -66,10 +66,19 @@ This was chosen over optimistic locking (`@Version` + retry) as the *primary* me
 
 **Deadlock prevention for transfers**: `TransferFundsUseCase` never locks "source, then destination" — it always locks both wallets **in ascending `WalletId` (UUID) order**, independent of which one is the source or destination. This creates one total lock order across all wallets, so two concurrent opposite-direction transfers (A→B and B→A) can never form a circular wait. This is proven by `ConcurrentTransferDeadlockIT`, which fires simultaneous A→B and B→A transfers and asserts they all complete without a lock timeout. `ConcurrentWithdrawalIT` proves the overdraft-prevention side: 20 concurrent withdrawals against a wallet that can only satisfy 10 of them result in exactly 10 successes, 10 rejections, and a final balance of exactly zero — never negative.
 
+## Idempotency
+
+Deposit, withdraw, transfer, and create-wallet are all retry-unsafe by nature — a client that times out waiting for a response has no way to know whether the operation actually happened, and a naive retry can double-deposit or double-transfer. All four mutating endpoints accept an optional `Idempotency-Key` request header to make retries safe:
+
+- `IdempotencyService.executeIdempotent(...)` wraps the controller's use-case call inside its own `@Transactional` method. Because Spring's default transaction propagation is `REQUIRED`, the use case's own `@Transactional` method joins this same physical transaction rather than starting a new one — so the idempotency bookkeeping and the actual wallet mutation commit or roll back **together, atomically**. There's no window where one succeeded and the other didn't.
+- The dedupe store (`idempotency_key` table: key, request path, response status, response body) follows the same port/adapter pattern as `WalletRepository`/`LedgerRepository` (`IdempotencyKeyRepository` port in `application/idempotency`, JPA adapter in `adapters/out/persistence`), and uses the same pessimistic-locking technique as wallet mutations: `findByKeyForUpdate` locks the row for the duration of the transaction, so a *sequential* retry (the common case — client times out, then retries) blocks until the original request's transaction resolves, then sees the completed response.
+- A *simultaneous* race on a brand-new key (two requests reserving the same never-before-seen key at the same instant) can't be caught by row locking, since there's no row yet to lock. It's caught instead by the table's primary key constraint: the losing transaction's `INSERT` fails with a `DataIntegrityViolationException`, translated to `409 Conflict` ("already being processed, please retry") — the losing request never runs the use case.
+- No header means no behavior change at all — every request executes independently, exactly as before this feature existed. This keeps the feature purely additive and backward-compatible.
+
 ## Status code rationale
 
-- **422 Unprocessable Entity** for `InsufficientFundsException` — the request is syntactically valid but violates a business invariant, distinct from 400 (malformed input).
-- **409 Conflict** for `DuplicateWalletException` (resource-state conflict) and, as defense-in-depth, for `ObjectOptimisticLockingFailureException`.
+- **422 Unprocessable Entity** for `InsufficientFundsException` and `IdempotencyKeyReusedException` — the request is syntactically valid but violates a business invariant, distinct from 400 (malformed input).
+- **409 Conflict** for `DuplicateWalletException`, `IdempotencyKeyInFlightException` (resource-state conflicts) and, as defense-in-depth, for `ObjectOptimisticLockingFailureException`.
 - **404 Not Found** for `WalletNotFoundException`.
 - **400 Bad Request** for `SameWalletTransferException`, `InvalidAmountException`, `CurrencyMismatchException`, bean-validation failures, and malformed request parameters (e.g. an unparseable `asOf`).
 - Errors are returned as RFC 7807 `application/problem+json` via Spring 6's built-in `ProblemDetail` — standard, and less boilerplate than a hand-rolled error DTO.

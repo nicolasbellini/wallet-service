@@ -1,5 +1,7 @@
 package com.recargapay.walletservice.adapters.in.web;
 
+import com.recargapay.walletservice.application.idempotency.IdempotencyKeyInFlightException;
+import com.recargapay.walletservice.application.idempotency.IdempotencyKeyReusedException;
 import com.recargapay.walletservice.domain.exception.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,9 +32,14 @@ public class GlobalExceptionHandler {
         return problem(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage());
     }
 
-    @ExceptionHandler(DuplicateWalletException.class)
-    public ProblemDetail handleDuplicateWallet(DuplicateWalletException ex) {
+    @ExceptionHandler({DuplicateWalletException.class, IdempotencyKeyInFlightException.class})
+    public ProblemDetail handleConflict(RuntimeException ex) {
         return problem(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
+    @ExceptionHandler(IdempotencyKeyReusedException.class)
+    public ProblemDetail handleIdempotencyKeyReused(IdempotencyKeyReusedException ex) {
+        return problem(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage());
     }
 
     @ExceptionHandler({SameWalletTransferException.class, InvalidAmountException.class, CurrencyMismatchException.class,
