@@ -9,6 +9,8 @@ See [DESIGN.md](DESIGN.md) for the architecture and how it meets the functional/
 - JDK 21
 - No Docker/external database required for the default profile — it runs against an in-memory H2 database.
 
+Alternatively, open this repo in **GitHub Codespaces** (Code → Codespaces → Create codespace) — `.devcontainer/devcontainer.json` provisions JDK 21 and forwards port 8080 automatically, no local setup needed.
+
 ## Build
 
 ```bash

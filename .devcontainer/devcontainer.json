@@ -1,0 +1,21 @@
+{
+  "name": "wallet-service",
+  "image": "mcr.microsoft.com/devcontainers/java:1-21-bullseye",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "vscjava.vscode-java-pack",
+        "vscjava.vscode-gradle"
+      ]
+    }
+  },
+  "forwardPorts": [8080],
+  "portsAttributes": {
+    "8080": {
+      "label": "wallet-service",
+      "onAutoForward": "notify"
+    }
+  },
+  "postCreateCommand": "./gradlew build -x test",
+  "remoteUser": "vscode"
+}
