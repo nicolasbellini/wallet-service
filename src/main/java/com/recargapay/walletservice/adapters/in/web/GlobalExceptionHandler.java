@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -35,10 +36,17 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler({SameWalletTransferException.class, InvalidAmountException.class, CurrencyMismatchException.class,
-            IllegalArgumentException.class, MethodArgumentNotValidException.class,
-            MissingServletRequestParameterException.class, MethodArgumentTypeMismatchException.class})
+            IllegalArgumentException.class, MissingServletRequestParameterException.class, MethodArgumentTypeMismatchException.class})
     public ProblemDetail handleBadRequest(Exception ex) {
         return problem(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ProblemDetail handleValidationFailure(MethodArgumentNotValidException ex) {
+        String detail = ex.getBindingResult().getFieldErrors().stream()
+                .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                .collect(Collectors.joining("; "));
+        return problem(HttpStatus.BAD_REQUEST, detail);
     }
 
     @ExceptionHandler(ObjectOptimisticLockingFailureException.class)

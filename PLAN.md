@@ -3,13 +3,13 @@
 ## Progress
 
 - [x] 1. Gradle/project setup
-- [ ] 2. Domain layer + unit tests
-- [ ] 3. Persistence layer
-- [ ] 4. Application use cases + unit tests
-- [ ] 5. Web adapters
-- [ ] 6. Integration + concurrency tests
-- [ ] 7. Deliverable docs (README.md, DESIGN.md, TRADEOFFS.md)
-- [ ] 8. Verification pass
+- [x] 2. Domain layer + unit tests
+- [x] 3. Persistence layer
+- [x] 4. Application use cases + unit tests
+- [x] 5. Web adapters
+- [x] 6. Integration + concurrency tests
+- [x] 7. Deliverable docs (README.md, DESIGN.md, TRADEOFFS.md)
+- [x] 8. Verification pass
 
 ## Context
 
