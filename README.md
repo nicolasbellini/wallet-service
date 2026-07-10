@@ -2,7 +2,7 @@
 
 A wallet microservice for RecargaPay's take-home assignment: create wallets, deposit, withdraw, transfer between users, and query current or historical balances.
 
-See [DESIGN.md](DESIGN.md) for the architecture and how it meets the functional/non-functional requirements, and [TRADEOFFS.md](TRADEOFFS.md) for documented assumptions and compromises. [PLAN.md](PLAN.md) is the implementation plan used to build this.
+See [DESIGN.md](DESIGN.md) for the architecture and how it meets the functional/non-functional requirements, and [TRADEOFFS.md](TRADEOFFS.md) for documented assumptions and compromises.
 
 ## Prerequisites
 
@@ -102,7 +102,7 @@ curl -s localhost:8080/actuator/health/readiness
 
 ## Project layout
 
-Hexagonal (ports & adapters) + DDD. See `PLAN.md`/`DESIGN.md` for the full rationale.
+Hexagonal (ports & adapters) + DDD. See `DESIGN.md` for the full rationale.
 
 ```
 src/main/java/com/recargapay/walletservice/
