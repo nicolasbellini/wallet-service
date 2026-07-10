@@ -8,10 +8,6 @@ import java.math.RoundingMode;
 import java.util.Currency;
 import java.util.Objects;
 
-/**
- * Immutable monetary value. Never negative — a negative "amount to move" is
- * expressed by choosing deposit vs. withdraw, not by the sign of Money.
- */
 public record Money(BigDecimal amount, Currency currency) {
 
     private static final int SCALE = 2;

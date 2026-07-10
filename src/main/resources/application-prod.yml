@@ -1,7 +1,7 @@
-# Example production profile pointing at Postgres.
-# Activate with: --spring.profiles.active=prod
-# Requires adding the Postgres JDBC driver dependency (see README) since the
-# default build only ships H2 for the dev/test profile.
+# Production profile pointing at Postgres. Activate with:
+# --spring.profiles.active=prod (or SPRING_PROFILES_ACTIVE=prod)
+# The .devcontainer/GitHub Codespaces setup activates this automatically
+# against a real Postgres container - see .devcontainer/docker-compose.yml.
 spring:
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/walletdb}

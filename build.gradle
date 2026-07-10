@@ -23,12 +23,19 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'org.flywaydb:flyway-core'
+    implementation 'org.flywaydb:flyway-database-postgresql'
 
     runtimeOnly 'com.h2database:h2'
+    runtimeOnly 'org.postgresql:postgresql'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
 
 tasks.named('test') {
     useJUnitPlatform()
+    // Tests must always run against the default (H2) profile, even inside the
+    // devcontainer where SPRING_PROFILES_ACTIVE=prod is set ambiently for `bootRun`
+    // to use the real Postgres container. Overriding it here for the forked test
+    // JVM guarantees test isolation regardless of the surrounding environment.
+    environment 'SPRING_PROFILES_ACTIVE', ''
 }

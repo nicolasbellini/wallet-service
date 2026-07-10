@@ -1,6 +1,8 @@
 {
   "name": "wallet-service",
-  "image": "mcr.microsoft.com/devcontainers/java:1-21-bullseye",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspaces/wallet-service",
   "customizations": {
     "vscode": {
       "extensions": [
@@ -9,11 +11,16 @@
       ]
     }
   },
-  "forwardPorts": [8080],
+  "forwardPorts": [8080, 5432],
   "portsAttributes": {
     "8080": {
       "label": "wallet-service",
       "onAutoForward": "notify"
+    },
+    "5432": {
+      "label": "postgres",
+      "onAutoForward": "silent",
+      "visibility": "private"
     }
   },
   "postCreateCommand": "./gradlew build -x test",

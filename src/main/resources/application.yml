@@ -1,6 +1,14 @@
+server:
+  shutdown: graceful
+
 spring:
   application:
     name: wallet-service
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
+  threads:
+    virtual:
+      enabled: true
   datasource:
     url: jdbc:h2:mem:walletdb;DB_CLOSE_DELAY=-1;LOCK_TIMEOUT=10000
     driver-class-name: org.h2.Driver
@@ -27,6 +35,13 @@ management:
   endpoint:
     health:
       show-details: always
+      probes:
+        enabled: true
+      group:
+        readiness:
+          include: readinessState,db
+        liveness:
+          include: livenessState
 
 logging:
   level:

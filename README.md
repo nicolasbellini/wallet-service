@@ -9,7 +9,7 @@ See [DESIGN.md](DESIGN.md) for the architecture and how it meets the functional/
 - JDK 21
 - No Docker/external database required for the default profile — it runs against an in-memory H2 database.
 
-Alternatively, open this repo in **GitHub Codespaces** (Code → Codespaces → Create codespace) — `.devcontainer/devcontainer.json` provisions JDK 21 and forwards port 8080 automatically, no local setup needed.
+Alternatively, open this repo in **GitHub Codespaces** (Code → Codespaces → Create codespace). `.devcontainer/docker-compose.yml` provisions two containers: the JDK 21 dev environment and a real Postgres 16 database. The codespace sets `SPRING_PROFILES_ACTIVE=prod`, so `./gradlew bootRun` there talks to the real Postgres automatically (not H2) — production-parity out of the box. Locally, outside a codespace, nothing changes: `bootRun` still defaults to H2 unless you opt into `prod` yourself. Either way `./gradlew test` always runs against an isolated H2 instance (see "Test" below) — tests never touch Postgres, even inside the codespace.
 
 ## Build
 
@@ -23,7 +23,7 @@ Alternatively, open this repo in **GitHub Codespaces** (Code → Codespaces → 
 ./gradlew test
 ```
 
-This runs domain unit tests, application-layer unit tests (Mockito-mocked ports), full-stack integration tests (`@SpringBootTest` + MockMvc + H2/Flyway), and two concurrency tests that prove the locking strategy prevents overdrafts and deadlocks.
+This runs domain unit tests, application-layer unit tests (Mockito-mocked ports), full-stack integration tests (`@SpringBootTest` + MockMvc + H2/Flyway), and two concurrency tests that prove the locking strategy prevents overdrafts and deadlocks. Every `@SpringBootTest` is pinned to `@ActiveProfiles("test")` (`src/test/resources/application-test.yml`, an isolated H2 instance), and the Gradle `test` task additionally clears `SPRING_PROFILES_ACTIVE` for the forked test JVM — so tests always run against a fresh, isolated database, even inside the devcontainer where `SPRING_PROFILES_ACTIVE=prod` is set ambiently for `bootRun`.
 
 ## Run
 
@@ -35,11 +35,10 @@ The service starts on `http://localhost:8080` with an in-memory H2 database (sch
 
 ### Running against Postgres
 
-`src/main/resources/application-prod.yml` is an example production profile pointing at Postgres. To use it:
+`src/main/resources/application-prod.yml` is the production profile pointing at Postgres (the Postgres JDBC driver is always on the classpath, so no dependency changes are needed).
 
-1. Add the Postgres JDBC driver dependency in `build.gradle`: `runtimeOnly 'org.postgresql:postgresql'`.
-2. Provide `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` environment variables (or edit the YAML directly).
-3. Run with `./gradlew bootRun --args='--spring.profiles.active=prod'`.
+- **In a codespace**: already wired up — `./gradlew bootRun` connects to the `db` container automatically (see `.devcontainer/docker-compose.yml`). Connect to it directly from your own machine with `psql -h localhost -U wallet_service -d walletdb` (password `wallet_service`) since port 5432 is forwarded.
+- **Locally, against your own Postgres**: provide `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` environment variables (or edit the YAML directly), then run with `./gradlew bootRun --args='--spring.profiles.active=prod'`.
 
 The schema (`src/main/resources/db/migration/V1__init_schema.sql`) uses only Postgres-compatible SQL (UUID, TIMESTAMP WITH TIME ZONE, NUMERIC, CHECK constraints), so no migration changes are needed to switch databases.
 
@@ -95,8 +94,10 @@ curl -s -X POST localhost:8080/api/v1/wallet/$WALLET1/deposit -H 'Content-Type: 
 curl -s -X POST localhost:8080/api/v1/wallet/$WALLET1/deposit -H 'Content-Type: application/json' \
   -H 'Idempotency-Key: retry-demo-1' -d '{"amount":"50.00"}'  # returns the same response, balance unchanged
 
-# health
+# health (liveness = process alive; readiness = process alive AND db reachable)
 curl -s localhost:8080/actuator/health
+curl -s localhost:8080/actuator/health/liveness
+curl -s localhost:8080/actuator/health/readiness
 ```
 
 ## Project layout

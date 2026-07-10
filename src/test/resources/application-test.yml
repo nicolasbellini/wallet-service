@@ -1,0 +1,13 @@
+# Explicit test profile, pinning every @SpringBootTest to an isolated in-memory
+# H2 database - independent of ambient SPRING_PROFILES_ACTIVE (the devcontainer
+# sets it to "prod" for `bootRun` against the real Postgres container) and
+# independent of whatever the "default" (no-profile) datasource happens to be
+# configured as at any point. Activated via @ActiveProfiles("test").
+# Everything else (Hikari pool size, JPA, Flyway, management/health, etc.) is
+# inherited unchanged from the base application.yml.
+spring:
+  datasource:
+    url: jdbc:h2:mem:walletdb-test;DB_CLOSE_DELAY=-1;LOCK_TIMEOUT=10000
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
