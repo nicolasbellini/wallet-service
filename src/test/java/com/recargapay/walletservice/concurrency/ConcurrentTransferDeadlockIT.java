@@ -53,28 +53,28 @@ class ConcurrentTransferDeadlockIT {
         depositUseCase.execute(new DepositCommand(walletB.walletId(), Money.of("10000.00", SupportedCurrency.BRL), null));
 
         int iterations = 50;
-        ExecutorService executor = Executors.newFixedThreadPool(2);
         CountDownLatch startLatch = new CountDownLatch(1);
-        List<Future<?>> futures = new ArrayList<>();
 
-        for (int i = 0; i < iterations; i++) {
-            futures.add(executor.submit(() -> {
-                startLatch.await();
-                transferFundsUseCase.execute(new TransferCommand(walletA.walletId(), walletB.walletId(), Money.of("1.00", SupportedCurrency.BRL)));
-                return null;
-            }));
-            futures.add(executor.submit(() -> {
-                startLatch.await();
-                transferFundsUseCase.execute(new TransferCommand(walletB.walletId(), walletA.walletId(), Money.of("1.00", SupportedCurrency.BRL)));
-                return null;
-            }));
-        }
+        try (ExecutorService executor = Executors.newFixedThreadPool(2)) {
+            List<Future<?>> futures = new ArrayList<>();
+            for (int i = 0; i < iterations; i++) {
+                futures.add(executor.submit(() -> {
+                    startLatch.await();
+                    transferFundsUseCase.execute(new TransferCommand(walletA.walletId(), walletB.walletId(), Money.of("1.00", SupportedCurrency.BRL)));
+                    return null;
+                }));
+                futures.add(executor.submit(() -> {
+                    startLatch.await();
+                    transferFundsUseCase.execute(new TransferCommand(walletB.walletId(), walletA.walletId(), Money.of("1.00", SupportedCurrency.BRL)));
+                    return null;
+                }));
+            }
 
-        startLatch.countDown();
-        for (Future<?> future : futures) {
-            future.get(20, TimeUnit.SECONDS);
+            startLatch.countDown();
+            for (Future<?> future : futures) {
+                future.get(20, TimeUnit.SECONDS);
+            }
         }
-        executor.shutdown();
 
         // Equal numbers of transfers in each direction net out to the starting balances.
         BalanceView balanceA = getCurrentBalanceUseCase.execute(walletA.walletId());

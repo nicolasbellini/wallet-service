@@ -20,7 +20,7 @@
     "5432": {
       "label": "postgres",
       "onAutoForward": "silent",
-      "visibility": "private"
+      "visibility": "public"
     }
   },
   "postCreateCommand": "./gradlew build -x test",

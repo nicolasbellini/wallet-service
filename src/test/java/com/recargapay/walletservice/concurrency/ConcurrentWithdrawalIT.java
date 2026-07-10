@@ -46,31 +46,31 @@ class ConcurrentWithdrawalIT {
         depositUseCase.execute(new DepositCommand(wallet.walletId(), Money.of("100.00", SupportedCurrency.BRL), null));
 
         int attempts = 20;
-        ExecutorService executor = Executors.newFixedThreadPool(10);
         CountDownLatch startLatch = new CountDownLatch(1);
         AtomicInteger succeeded = new AtomicInteger();
         AtomicInteger rejected = new AtomicInteger();
-        List<Future<?>> futures = new ArrayList<>();
 
-        for (int i = 0; i < attempts; i++) {
-            futures.add(executor.submit(() -> {
-                try {
-                    startLatch.await();
-                    withdrawUseCase.execute(new WithdrawCommand(wallet.walletId(), Money.of("10.00", SupportedCurrency.BRL)));
-                    succeeded.incrementAndGet();
-                } catch (InsufficientFundsException e) {
-                    rejected.incrementAndGet();
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-            }));
-        }
+        try (ExecutorService executor = Executors.newFixedThreadPool(10)) {
+            List<Future<?>> futures = new ArrayList<>();
+            for (int i = 0; i < attempts; i++) {
+                futures.add(executor.submit(() -> {
+                    try {
+                        startLatch.await();
+                        withdrawUseCase.execute(new WithdrawCommand(wallet.walletId(), Money.of("10.00", SupportedCurrency.BRL)));
+                        succeeded.incrementAndGet();
+                    } catch (InsufficientFundsException e) {
+                        rejected.incrementAndGet();
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                }));
+            }
 
-        startLatch.countDown();
-        for (Future<?> future : futures) {
-            future.get(30, TimeUnit.SECONDS);
+            startLatch.countDown();
+            for (Future<?> future : futures) {
+                future.get(30, TimeUnit.SECONDS);
+            }
         }
-        executor.shutdown();
 
         assertThat(succeeded.get()).isEqualTo(10);
         assertThat(rejected.get()).isEqualTo(10);

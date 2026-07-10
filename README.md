@@ -1,5 +1,7 @@
 # Wallet Service
 
+[![CI](https://github.com/nicolasbellini/wallet-service/actions/workflows/ci.yml/badge.svg)](https://github.com/nicolasbellini/wallet-service/actions/workflows/ci.yml)
+
 A wallet microservice for RecargaPay's take-home assignment: create wallets, deposit, withdraw, transfer between users, and query current or historical balances.
 
 See [DESIGN.md](DESIGN.md) for the architecture and how it meets the functional/non-functional requirements, and [TRADEOFFS.md](TRADEOFFS.md) for documented assumptions and compromises.

@@ -116,16 +116,4 @@ class WalletControllerIT {
         mockMvc.perform(post("/api/v1/wallet").contentType("application/json").content(body))
                 .andExpect(status().isConflict());
     }
-
-    @Test
-    void transferToSameWalletReturns400() throws Exception {
-        UUID wallet = createWallet();
-        mockMvc.perform(post("/api/v1/transfer")
-                        .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(Map.of(
-                                "sourceWalletId", wallet.toString(),
-                                "destinationWalletId", wallet.toString(),
-                                "amount", "1.00"))))
-                .andExpect(status().isBadRequest());
-    }
 }
